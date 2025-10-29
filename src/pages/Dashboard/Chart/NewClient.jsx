@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -10,6 +10,8 @@ import {
 } from "chart.js";
 import ChartDataLabels from "chartjs-plugin-datalabels";
 import { Bar } from "react-chartjs-2";
+import { privateRequest } from "../../../config/axios.config";
+import { networkErrorHandeller } from "../../../utils/helpers";
 
 ChartJS.register(
   CategoryScale,
@@ -22,21 +24,46 @@ ChartJS.register(
 );
 
 const NewClient = () => {
-  const labels = [
-    "Jan",
-    "Feb",
-    "Mar",
-    "Apr",
-    "May",
-    "Jun",
-    "Jul",
-    "Aug",
-    "Sep",
-    "Oct",
-    "Nov",
-    "Dec",
-  ];
-  const dataValues = [20, 0, 22, 5, 7, 3, 3, 8, 17, 19, 18, 22];
+  const [apiData, setApiData] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  // ✅ Fetch data
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const response = await privateRequest.get("admin/dashboard");
+      if (response?.status === 200) {
+        setApiData(response?.data?.data?.monthly);
+      }
+    } catch (error) {
+      networkErrorHandeller(error);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const vendorData = apiData || [];
+
+  if (loading)
+    return (
+      <div className="bg-white shadow-md p-4 rounded-xl text-center">
+        Loading data...
+      </div>
+    );
+
+  if (!vendorData.length)
+    return (
+      <div className="bg-white shadow-md p-4 rounded-xl text-center">
+        No data available
+      </div>
+    );
+
+  const labels = vendorData.map((item) => item.month_name);
+  const dataValues = vendorData.map((item) => item.new_vendors);
+
   const colors = [
     "#60a5fa",
     "#3b82f6",
@@ -65,7 +92,7 @@ const NewClient = () => {
 
   const options = {
     responsive: true,
-
+    maintainAspectRatio: false, // ✅ important for scroll responsiveness
     plugins: {
       legend: { display: false },
       title: {
@@ -73,7 +100,7 @@ const NewClient = () => {
         text: "Monthly New Client",
         font: { size: 18 },
         align: "start",
-        color: '#000000',
+        color: "#000000",
       },
       datalabels: {
         anchor: "end",
@@ -84,27 +111,26 @@ const NewClient = () => {
           weight: "bold",
           size: 12,
         },
-        formatter: (value) => {
-          if (value === 0) return null; // don't show label if value is 0
-          return value;
-        },
+        formatter: (value) => (value === 0 ? null : value),
       },
     },
     scales: {
       y: {
         beginAtZero: true,
         min: 0,
-        max: 25,
-        ticks: {
-          stepSize: 5, // step size between ticks, adjust as you like
-        },
+        ticks: { stepSize: 5 },
       },
     },
   };
 
   return (
-    <div className="bg-white shadow-md p-4 ">
-      <Bar data={data} options={options} />
+    <div className="bg-white shadow-md p-4 rounded-xl">
+      {/* ✅ Scroll container */}
+      <div className="overflow-x-auto">
+        <div className="min-w-[500px] md:min-w-full h-[400px]">
+          <Bar data={data} options={options} />
+        </div>
+      </div>
     </div>
   );
 };

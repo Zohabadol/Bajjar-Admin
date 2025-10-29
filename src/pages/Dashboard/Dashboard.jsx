@@ -23,7 +23,7 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-1 mt-5 gap-4 ">
         {/* <BestSellersCard /> */}
         <ActiveClient />
-        {/* <NewClient /> */}
+        <NewClient />
         {/* <BestSellersCard/> */}
 
         {/* <TrafficCard /> */}
